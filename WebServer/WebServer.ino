@@ -13,7 +13,11 @@ const char* ssid = "Boszorkany";
 const char* password = "Kucko725B";
 
 // Set LED GPIO
-const int ledPin = 2;
+const int LED_PIN = 2;
+// LED connection is inverted
+const int LED_ON = 0;
+const int LED_OFF = 1;
+
 // Stores LED state
 String ledState;
 
@@ -41,7 +45,7 @@ String getPressure() {
 String getDataJSON() {
   JSONVar myObject;
 
-  myObject["ledState"] = !digitalRead(ledPin);  // invertált bekötés
+  myObject["ledState"] = !digitalRead(LED_PIN);  // invertált bekötés
   myObject["time"] = millis() / 1000;
   myObject["value"] = random(100);
 
@@ -54,7 +58,7 @@ String getDataJSON() {
 void setup() {
   // Serial port for debugging purposes
   Serial.begin(115200);
-  pinMode(ledPin, OUTPUT);
+  pinMode(LED_PIN, OUTPUT);
 
   // Initialize SPIFFS
   if (!SPIFFS.begin()) {
@@ -117,14 +121,14 @@ void setup() {
 
   // Route to set GPIO to HIGH
   server.on("/on", HTTP_GET, [](AsyncWebServerRequest * request) {
-    digitalWrite(ledPin, HIGH);
-    request->send_P(200, "text/plain", getDataJSON().c_str());  // todo HTML
+    digitalWrite(LED_PIN, LED_ON);
+    request->send_P(200, "text/plain", getDataJSON().c_str());
   });
 
   // Route to set GPIO to LOW
   server.on("/off", HTTP_GET, [](AsyncWebServerRequest * request) {
-    digitalWrite(ledPin, LOW);
-    request->send_P(200, "text/plain", getDataJSON().c_str());  // todo HTML
+    digitalWrite(LED_PIN, LED_OFF);
+    request->send_P(200, "text/plain", getDataJSON().c_str());
   });
 
   server.on("/temperature", HTTP_GET, [](AsyncWebServerRequest * request) {
