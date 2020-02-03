@@ -25,7 +25,7 @@ String getTemperature() {
   Serial.println(temperature);
   return String(temperature);
 }
-  
+
 String getHumidity() {
   float humidity = random(100);
   Serial.println(humidity);
@@ -42,7 +42,7 @@ String getDataJSON() {
   JSONVar myObject;
 
   myObject["ledState"] = !digitalRead(ledPin);  // invertált bekötés
-  myObject["time"] = millis()/1000;
+  myObject["time"] = millis() / 1000;
   myObject["value"] = random(100);
 
   String retVal = JSON.stringify(myObject);
@@ -51,13 +51,13 @@ String getDataJSON() {
   return String(retVal);
 }
 
-void setup(){
+void setup() {
   // Serial port for debugging purposes
   Serial.begin(115200);
   pinMode(ledPin, OUTPUT);
 
   // Initialize SPIFFS
-  if(!SPIFFS.begin()){
+  if (!SPIFFS.begin()) {
     Serial.println("An Error has occurred while mounting SPIFFS");
     return;
   }
@@ -73,13 +73,14 @@ void setup(){
   Serial.println(WiFi.localIP());
 
   // Route for root / web page
-  server.on("/", HTTP_GET, [](AsyncWebServerRequest *request){
+  server.on("/", HTTP_GET, [](AsyncWebServerRequest * request) {
     request->send(SPIFFS, "/index.html", "text/html");
   });
 
   server.onNotFound([](AsyncWebServerRequest * request) {
     Serial.println("** NOT FOUND **");
-   request->redirect("/");   
+//    request->redirect("/");
+      request->send(SPIFFS, "/index.html", "text/html");
   });
 
 
@@ -88,72 +89,57 @@ void setup(){
 
 
 
-    // Route to load style.css file
-  server.on("/styles.css", HTTP_GET, [](AsyncWebServerRequest *request){
+
+  server.on("/styles.css", HTTP_GET, [](AsyncWebServerRequest * request) {
     request->send(SPIFFS, "/styles.css", "text/css");
   });
 
-  server.on("/main-es2015.js", HTTP_GET, [](AsyncWebServerRequest *request){
-    request->send(SPIFFS, "/main-es2015.js", "text/javascript");
+  server.on("/main.js", HTTP_GET, [](AsyncWebServerRequest * request) {
+    request->send(SPIFFS, "/main.js", "text/javascript");
   });
 
-  server.on("/main-es5.js", HTTP_GET, [](AsyncWebServerRequest *request){
-    request->send(SPIFFS, "/main-es5.js", "text/javascript");
+  server.on("/polyfills.js", HTTP_GET, [](AsyncWebServerRequest * request) {
+    request->send(SPIFFS, "/polyfills.js", "text/javascript");
   });
 
-    server.on("/polyfills-es2015.js", HTTP_GET, [](AsyncWebServerRequest *request){
-    request->send(SPIFFS, "/polyfills-es2015.js", "text/javascript");
+  server.on("/runtime.js", HTTP_GET, [](AsyncWebServerRequest * request) {
+    request->send(SPIFFS, "/runtime.js", "text/javascript");
   });
 
-    server.on("/polyfills-es5.js", HTTP_GET, [](AsyncWebServerRequest *request){
-    request->send(SPIFFS, "/polyfills-es5.js", "text/javascript");
-  });
-
-    server.on("/runtime-es2015.js", HTTP_GET, [](AsyncWebServerRequest *request){
-    request->send(SPIFFS, "/runtime-es2015.js", "text/javascript");
-  });
-
-    server.on("/runtime-es5.js", HTTP_GET, [](AsyncWebServerRequest *request){
-    request->send(SPIFFS, "/runtime-es5.js", "text/javascript");
-  });
-
-    server.on("/favicon.ico", HTTP_GET, [](AsyncWebServerRequest *request){
+  server.on("/favicon.ico", HTTP_GET, [](AsyncWebServerRequest * request) {
     request->send(SPIFFS, "/favicon.ico", "image/vnd.microsoft.icon");
   });
 
 
-  
 
 
-
-  
 
 
   // Route to set GPIO to HIGH
-  server.on("/on", HTTP_GET, [](AsyncWebServerRequest *request){
+  server.on("/on", HTTP_GET, [](AsyncWebServerRequest * request) {
     digitalWrite(ledPin, HIGH);
     request->send_P(200, "text/plain", getDataJSON().c_str());  // todo HTML
   });
-  
+
   // Route to set GPIO to LOW
-  server.on("/off", HTTP_GET, [](AsyncWebServerRequest *request){
-    digitalWrite(ledPin, LOW);    
+  server.on("/off", HTTP_GET, [](AsyncWebServerRequest * request) {
+    digitalWrite(ledPin, LOW);
     request->send_P(200, "text/plain", getDataJSON().c_str());  // todo HTML
   });
 
-  server.on("/temperature", HTTP_GET, [](AsyncWebServerRequest *request){
+  server.on("/temperature", HTTP_GET, [](AsyncWebServerRequest * request) {
     request->send_P(200, "text/plain", getTemperature().c_str());
   });
-  
-  server.on("/humidity", HTTP_GET, [](AsyncWebServerRequest *request){
+
+  server.on("/humidity", HTTP_GET, [](AsyncWebServerRequest * request) {
     request->send_P(200, "text/plain", getHumidity().c_str());
   });
-  
-  server.on("/pressure", HTTP_GET, [](AsyncWebServerRequest *request){
+
+  server.on("/pressure", HTTP_GET, [](AsyncWebServerRequest * request) {
     request->send_P(200, "text/plain", getPressure().c_str());
   });
 
-  server.on("/rest", HTTP_GET, [](AsyncWebServerRequest *request){
+  server.on("/rest", HTTP_GET, [](AsyncWebServerRequest * request) {
     request->send_P(200, "text/plain", getDataJSON().c_str());
   });
 
@@ -164,7 +150,7 @@ void setup(){
   // Start server
   server.begin();
 }
- 
-void loop(){
-  
-} 
+
+void loop() {
+
+}
