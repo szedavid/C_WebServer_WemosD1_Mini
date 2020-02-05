@@ -12,8 +12,9 @@ const char* ssid = "Boszorkany";
 const char* password = "Kucko725B";
 
 // Set LED GPIO
-const int LED_PIN = 2;
-const int SERVO_PIN = 0;
+const int LED_PIN = LED_BUILTIN;
+const int SERVO_PIN = D0;
+const int POTMETER_PIN = A0;
 
 // LED connection is inverted
 const int LED_ON = 0;
@@ -27,13 +28,15 @@ AsyncWebServer server(80);
 
 // Create Servo object
 Servo servo;
-int servoAngle = 0;
+int servoAngle;
+
+int potmeterValue;
 
 String getMonitorData() {
   JSONVar myObject;
 
   myObject["time"] = millis() / 1000;
-  myObject["value"] = random(100);
+  myObject["value"] = potmeterValue;
 
   String retVal = JSON.stringify(myObject);
 
@@ -145,6 +148,11 @@ void setup() {
     } else {
       request->send_P(400, "text/plain", ((String)("Missing parameter")).c_str());    // todo check
     }
+  });
+
+  // POTMETER
+    server.on("/potmeter", HTTP_GET, [](AsyncWebServerRequest * request) {
+    request->send_P(200, "text/plain", getMonitorData().c_str());
   });
 
   // Start server
