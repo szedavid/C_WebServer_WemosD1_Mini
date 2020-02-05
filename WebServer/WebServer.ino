@@ -22,17 +22,11 @@ const int POTMETER_PIN = A0;
 const int LED_ON = 0;
 const int LED_OFF = 1;
 
-// Stores LED state
-String ledState;
-
 // Create AsyncWebServer object on port 80
 AsyncWebServer server(80);
 
 // Create Servo object
 Servo servo;
-int servoAngle;
-
-//int potmeterValue;
 
 String getMonitorData() {
   JSONVar myObject;
@@ -53,7 +47,7 @@ String getControllerData() {
   JSONVar myObject;
 
   myObject["ledState"] = !digitalRead(LED_PIN);  // high on zero
-  myObject["servoAngle"] = servoAngle;
+  myObject["servoAngle"] = servo.read();
 
   String retVal = JSON.stringify(myObject);
 
@@ -81,26 +75,20 @@ void setup() {
     Serial.println("Connecting to WiFi...");
   }
 
-  // Print ESP32 Local IP Address
+  // Print Local IP Address
   Serial.println(WiFi.localIP());
 
+// ** ENDPOINTS **
   // Route for root / web page
   server.on("/", HTTP_GET, [](AsyncWebServerRequest * request) {
     request->send(SPIFFS, "/index.html", "text/html");
   });
 
+  // Angular routing
   server.onNotFound([](AsyncWebServerRequest * request) {
     Serial.println("** NOT FOUND **");
-//    request->redirect("/");
       request->send(SPIFFS, "/index.html", "text/html");
   });
-
-
-
-
-
-
-
 
   server.on("/styles.css", HTTP_GET, [](AsyncWebServerRequest * request) {
     request->send(SPIFFS, "/styles.css", "text/css");
@@ -124,9 +112,7 @@ void setup() {
 
 
 
-
-
-//  --   QUERY
+//  --- QUERY ---
   server.on("/monitor", HTTP_GET, [](AsyncWebServerRequest * request) {
     request->send_P(200, "text/plain", getMonitorData().c_str());
   });
@@ -136,49 +122,28 @@ void setup() {
   });
 
 
-
-//  --   SET
-  // // Route to set GPIO to HIGH
-  // server.on("/on", HTTP_GET, [](AsyncWebServerRequest * request) {
-  //   digitalWrite(LED_PIN, LED_ON);
-  //   request->send_P(200, "text/plain", getMonitorData().c_str());
-  // });
-
-  // // Route to set GPIO to LOW
-  // server.on("/off", HTTP_GET, [](AsyncWebServerRequest * request) {
-  //   digitalWrite(LED_PIN, LED_OFF);
-  //   request->send_P(200, "text/plain", getMonitorData().c_str());
-  // });
-
+//  --- SET ---
+  // LED
   server.on("/led", HTTP_POST, [](AsyncWebServerRequest * request) {
     const char* PARAM = "state";
-    Serial.println("D-led");
-    if(request->hasParam(PARAM)) {    // todo check (https://github.com/me-no-dev/ESPAsyncWebServer#get-post-and-file-parameters)
-      Serial.println("D-1");
+    if(request->hasParam(PARAM)) {
       AsyncWebParameter* p = request->getParam(PARAM);
-      Serial.println("D-2");
-      digitalWrite(LED_PIN, (p->value() == "true" ? LED_ON : LED_OFF));      // todo test
-      Serial.println("D-3");
-      Serial.println(p->value());
+      digitalWrite(LED_PIN, (p->value() == "true" ? LED_ON : LED_OFF));
       request->send_P(200, "text/plain", getControllerData().c_str());
     } else {
-      Serial.println("D-50");
-      request->send_P(400, "text/plain", ((String)("Missing parameter")).c_str());    // todo check
+      request->send_P(400, "text/plain", ((String)("Missing parameter")).c_str());
     }
   });
-
-
-  
 
   // SERVO
   server.on("/servo", HTTP_POST, [](AsyncWebServerRequest * request) {
     const char* PARAM = "angle";
-    if(request->hasParam(PARAM)) {    // todo check (https://github.com/me-no-dev/ESPAsyncWebServer#get-post-and-file-parameters)
+    if(request->hasParam(PARAM)) {
       AsyncWebParameter* p = request->getParam(PARAM);
-      servoAngle = p->value().toInt();
+      servo.write(p->value().toInt());
       request->send_P(200, "text/plain", getControllerData().c_str());
     } else {
-      request->send_P(400, "text/plain", ((String)("Missing parameter")).c_str());    // todo check
+      request->send_P(400, "text/plain", ((String)("Missing parameter")).c_str());
     }
   });
 
@@ -187,7 +152,8 @@ void setup() {
     request->send_P(200, "text/plain", getMonitorData().c_str());
   });
 
-  // Start server
+
+// Start server
   server.begin();
 }
 
