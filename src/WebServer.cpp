@@ -1,3 +1,6 @@
+// Created by David Szegedi - 2020
+// Feel free to use it for any project.
+
 #include <Arduino.h>
 #include <ESP8266WiFi.h>
 #include <ESPAsyncTCP.h>
@@ -58,7 +61,7 @@ String getControllerData() {
 
 void setup() {
   // Serial port for debugging purposes
-  Serial.begin(115200);
+  Serial.begin(9600);
   pinMode(LED_PIN, OUTPUT);
 
   servo.attach(SERVO_PIN);
@@ -122,16 +125,26 @@ void setup() {
 
 
 
-  // Route to set GPIO to HIGH
-  server.on("/on", HTTP_GET, [](AsyncWebServerRequest * request) {
-    digitalWrite(LED_PIN, LED_ON);
-    request->send_P(200, "text/plain", getMonitorData().c_str());
-  });
+  // // Route to set GPIO to HIGH
+  // server.on("/on", HTTP_GET, [](AsyncWebServerRequest * request) {
+  //   digitalWrite(LED_PIN, LED_ON);
+  //   request->send_P(200, "text/plain", getMonitorData().c_str());
+  // });
 
-  // Route to set GPIO to LOW
-  server.on("/off", HTTP_GET, [](AsyncWebServerRequest * request) {
-    digitalWrite(LED_PIN, LED_OFF);
-    request->send_P(200, "text/plain", getMonitorData().c_str());
+  // // Route to set GPIO to LOW
+  // server.on("/off", HTTP_GET, [](AsyncWebServerRequest * request) {
+  //   digitalWrite(LED_PIN, LED_OFF);
+  //   request->send_P(200, "text/plain", getMonitorData().c_str());
+  // });
+
+  server.on("/led", HTTP_POST, [](AsyncWebServerRequest * request) {
+    if(request->hasParam("state", true)) {    // todo check (https://github.com/me-no-dev/ESPAsyncWebServer#get-post-and-file-parameters)
+      AsyncWebParameter* p = request->getParam("state", true);
+      digitalWrite(LED_PIN, (p->value() ? LED_ON : LED_OFF));      // todo test
+      request->send_P(200, "text/plain", getControllerData().c_str());
+    } else {
+      request->send_P(400, "text/plain", ((String)("Missing parameter")).c_str());    // todo check
+    }
   });
 
   server.on("/rest", HTTP_GET, [](AsyncWebServerRequest * request) {
@@ -139,11 +152,10 @@ void setup() {
   });
 
   // SERVO
-  server.on("/servo", HTTP_GET, [](AsyncWebServerRequest * request) {
-    int paramsNr = request->params();
-    if(paramsNr > 0) {
-      AsyncWebParameter* p = request->getParam(0);
-      servoAngle = (p -> value()).toInt();
+  server.on("/servo", HTTP_POST, [](AsyncWebServerRequest * request) {
+    if(request->hasParam("angle")) {    // todo check (https://github.com/me-no-dev/ESPAsyncWebServer#get-post-and-file-parameters)
+      AsyncWebParameter* p = request->getParam("angle");
+      servoAngle = p->value().toInt();
       request->send_P(200, "text/plain", getControllerData().c_str());
     } else {
       request->send_P(400, "text/plain", ((String)("Missing parameter")).c_str());    // todo check
