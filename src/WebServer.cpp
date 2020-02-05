@@ -1,3 +1,4 @@
+#include <Arduino.h>
 
 // Import required libraries
 #include <ESP8266WiFi.h>
@@ -6,7 +7,6 @@
 #include <FS.h>
 #include <Wire.h>
 #include <Arduino_JSON.h>
-
 
 // Replace with your network credentials
 const char* ssid = "Boszorkany";
