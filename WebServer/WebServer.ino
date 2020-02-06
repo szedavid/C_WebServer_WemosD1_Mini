@@ -10,8 +10,10 @@
 #include <Servo.h>
 
 // Replace with your network credentials
-const char* ssid = "Boszorkany";
-const char* password = "Kucko725B";
+// const char* ssid = "Boszorkany";
+// const char* password = "Kucko725B";
+const char* ssid = "SzeDavid";
+const char* password = "19841209";
 
 // Set LED GPIO
 const int LED_PIN = LED_BUILTIN;
@@ -59,6 +61,7 @@ void setup() {
   // Serial port for debugging purposes
   Serial.begin(9600);
   pinMode(LED_PIN, OUTPUT);
+  digitalWrite(LED_PIN,LED_OFF);
 
   servo.attach(SERVO_PIN);
 
@@ -74,6 +77,8 @@ void setup() {
     delay(1000);
     Serial.println("Connecting to WiFi...");
   }
+
+  digitalWrite(LED_PIN,LED_ON);
 
   // Print Local IP Address
   Serial.println(WiFi.localIP());
