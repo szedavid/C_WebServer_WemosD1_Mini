@@ -57,11 +57,17 @@ String getControllerData() {
   return String(retVal);
 }
 
+void sendJS(AsyncWebServerRequest * request, char* file) {
+  AsyncWebServerResponse *response = request->beginResponse(SPIFFS, file, "text/javascript");
+  response->addHeader("Content-Encoding", "gzip");
+  request->send(response);
+}
+
 void setup() {
   // Serial port for debugging purposes
   Serial.begin(9600);
   pinMode(LED_PIN, OUTPUT);
-  digitalWrite(LED_PIN,LED_OFF);
+  digitalWrite(LED_PIN, LED_OFF);
 
   servo.attach(SERVO_PIN);
 
@@ -78,60 +84,82 @@ void setup() {
     Serial.println("Connecting to WiFi...");
   }
 
-  digitalWrite(LED_PIN,LED_ON);
+  digitalWrite(LED_PIN, LED_ON);
 
   // Print Local IP Address
   Serial.println(WiFi.localIP());
 
-// ** ENDPOINTS **
+  // ** ENDPOINTS **
   // Route for root / web page
   server.on("/", HTTP_GET, [](AsyncWebServerRequest * request) {
-    request->send(SPIFFS, "/index.html", "text/html");
+    Serial.println("- Root -");
+    AsyncWebServerResponse *response = request->beginResponse(SPIFFS, "/index.html", "text/html");
+    response->addHeader("Content-Encoding", "gzip");
+    request->send(response);
   });
 
   // Angular routing
   server.onNotFound([](AsyncWebServerRequest * request) {
     Serial.println("** NOT FOUND **");
-      request->send(SPIFFS, "/index.html", "text/html");
+    AsyncWebServerResponse *response = request->beginResponse(SPIFFS, "/index.html", "text/html");
+    response->addHeader("Content-Encoding", "gzip");
+    request->send(response);
   });
 
   server.on("/styles.css", HTTP_GET, [](AsyncWebServerRequest * request) {
-    request->send(SPIFFS, "/styles.css", "text/css");
+    AsyncWebServerResponse *response = request->beginResponse(SPIFFS, "/styles.css", "text/css");
+    response->addHeader("Content-Encoding", "gzip");
+    request->send(response);
   });
 
   server.on("/main.js", HTTP_GET, [](AsyncWebServerRequest * request) {
-    request->send(SPIFFS, "/main.js", "text/javascript");
+    //    AsyncWebServerResponse *response = request->beginResponse(SPIFFS, "/main.js", "text/javascript");
+    //    response->addHeader("Content-Encoding", "gzip");
+    //    request->send(response);
+
+    sendJS(request, "/main.js");
   });
 
   server.on("/polyfills.js", HTTP_GET, [](AsyncWebServerRequest * request) {
-    request->send(SPIFFS, "/polyfills.js", "text/javascript");
+    //    AsyncWebServerResponse *response = request->beginResponse(SPIFFS, "/polyfills.js", "text/javascript");
+    //    response->addHeader("Content-Encoding", "gzip");
+    //    request->send(response);
+
+    sendJS(request, "/polyfills.js");
   });
 
   server.on("/runtime.js", HTTP_GET, [](AsyncWebServerRequest * request) {
-    request->send(SPIFFS, "/runtime.js", "text/javascript");
+    //    AsyncWebServerResponse *response = request->beginResponse(SPIFFS, "/runtime.js", "text/javascript");
+    //    response->addHeader("Content-Encoding", "gzip");
+    //    request->send(response);
+
+    sendJS(request, "/runtime.js");
   });
 
   server.on("/favicon.ico", HTTP_GET, [](AsyncWebServerRequest * request) {
-    request->send(SPIFFS, "/favicon.ico", "image/vnd.microsoft.icon");
+    AsyncWebServerResponse *response = request->beginResponse(SPIFFS, "/favicon.ico", "image/vnd.microsoft.icon");
+    response->addHeader("Content-Encoding", "gzip");
+    request->send(response);
   });
 
 
 
-//  --- QUERY ---
-  server.on("/monitor", HTTP_GET, [](AsyncWebServerRequest * request) {
+
+  //  --- QUERY ---
+  server.on("/v1/monitor", HTTP_GET, [](AsyncWebServerRequest * request) {
     request->send_P(200, "text/plain", getMonitorData().c_str());
   });
 
-  server.on("/controller", HTTP_GET, [](AsyncWebServerRequest * request) {
+  server.on("/v1/controller", HTTP_GET, [](AsyncWebServerRequest * request) {
     request->send_P(200, "text/plain", getControllerData().c_str());
   });
 
 
-//  --- SET ---
+  //  --- SET ---
   // LED
-  server.on("/led", HTTP_POST, [](AsyncWebServerRequest * request) {
+  server.on("/v1/led", HTTP_POST, [](AsyncWebServerRequest * request) {
     const char* PARAM = "state";
-    if(request->hasParam(PARAM)) {
+    if (request->hasParam(PARAM)) {
       AsyncWebParameter* p = request->getParam(PARAM);
       digitalWrite(LED_PIN, (p->value() == "true" ? LED_ON : LED_OFF));
       request->send_P(200, "text/plain", getControllerData().c_str());
@@ -141,9 +169,9 @@ void setup() {
   });
 
   // SERVO
-  server.on("/servo", HTTP_POST, [](AsyncWebServerRequest * request) {
+  server.on("/v1/servo", HTTP_POST, [](AsyncWebServerRequest * request) {
     const char* PARAM = "angle";
-    if(request->hasParam(PARAM)) {
+    if (request->hasParam(PARAM)) {
       AsyncWebParameter* p = request->getParam(PARAM);
       servo.write(p->value().toInt());
       request->send_P(200, "text/plain", getControllerData().c_str());
@@ -153,12 +181,12 @@ void setup() {
   });
 
   // POTMETER
-    server.on("/potmeter", HTTP_GET, [](AsyncWebServerRequest * request) {
+  server.on("/v1/potmeter", HTTP_GET, [](AsyncWebServerRequest * request) {
     request->send_P(200, "text/plain", getMonitorData().c_str());
   });
 
 
-// Start server
+  // Start server
   server.begin();
 }
 
