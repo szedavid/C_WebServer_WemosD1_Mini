@@ -89,61 +89,23 @@ void setup() {
   // Print Local IP Address
   Serial.println(WiFi.localIP());
 
-  // ** ENDPOINTS **
-  // Route for root / web page
-  server.on("/", HTTP_GET, [](AsyncWebServerRequest * request) {
-    Serial.println("- Root -");
-    AsyncWebServerResponse *response = request->beginResponse(SPIFFS, "/index.html", "text/html");
-    response->addHeader("Content-Encoding", "gzip");
-    request->send(response);
-  });
-
-  // Angular routing
-  server.onNotFound([](AsyncWebServerRequest * request) {
-    Serial.println("** NOT FOUND **");
-    AsyncWebServerResponse *response = request->beginResponse(SPIFFS, "/index.html", "text/html");
-    response->addHeader("Content-Encoding", "gzip");
-    request->send(response);
-  });
-
-  server.on("/styles.css", HTTP_GET, [](AsyncWebServerRequest * request) {
-    AsyncWebServerResponse *response = request->beginResponse(SPIFFS, "/styles.css", "text/css");
-    response->addHeader("Content-Encoding", "gzip");
-    request->send(response);
-  });
-
-  server.on("/main.js", HTTP_GET, [](AsyncWebServerRequest * request) {
-    //    AsyncWebServerResponse *response = request->beginResponse(SPIFFS, "/main.js", "text/javascript");
-    //    response->addHeader("Content-Encoding", "gzip");
-    //    request->send(response);
-
-    sendJS(request, "/main.js");
-  });
-
-  server.on("/polyfills.js", HTTP_GET, [](AsyncWebServerRequest * request) {
-    //    AsyncWebServerResponse *response = request->beginResponse(SPIFFS, "/polyfills.js", "text/javascript");
-    //    response->addHeader("Content-Encoding", "gzip");
-    //    request->send(response);
-
-    sendJS(request, "/polyfills.js");
-  });
-
-  server.on("/runtime.js", HTTP_GET, [](AsyncWebServerRequest * request) {
-    //    AsyncWebServerResponse *response = request->beginResponse(SPIFFS, "/runtime.js", "text/javascript");
-    //    response->addHeader("Content-Encoding", "gzip");
-    //    request->send(response);
-
-    sendJS(request, "/runtime.js");
-  });
-
-  server.on("/favicon.ico", HTTP_GET, [](AsyncWebServerRequest * request) {
-    AsyncWebServerResponse *response = request->beginResponse(SPIFFS, "/favicon.ico", "image/vnd.microsoft.icon");
-    response->addHeader("Content-Encoding", "gzip");
-    request->send(response);
-  });
+  Dir dir = SPIFFS.openDir("/");
+  while (dir.next()) {
+    String fileName = dir.fileName();
+    size_t fileSize = dir.fileSize();
+    Serial.printf("FS File: %s, size: %s\n", fileName.c_str(), String(fileSize).c_str());
+  }
 
 
+  server.serveStatic("/", SPIFFS, "/").setDefaultFile("index.html");
 
+  //   This is necessary for Angular routing if called with ang. router param. .../controller
+    server.onNotFound([](AsyncWebServerRequest * request) {
+      Serial.println("** NOT FOUND **");
+      AsyncWebServerResponse *response = request->beginResponse(SPIFFS, "/index.html.gz", "text/html");
+      response->addHeader("Content-Encoding", "gzip");
+      request->send(response);
+    });
 
   //  --- QUERY ---
   server.on("/v1/monitor", HTTP_GET, [](AsyncWebServerRequest * request) {
