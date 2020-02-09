@@ -17,6 +17,7 @@ const char* password = "19841209";
 
 // Set LED GPIO
 const int LED_PIN = LED_BUILTIN;
+const int SERVO_MAX = 180;
 const int SERVO_PIN = D0;
 const int POTMETER_PIN = A0;
 
@@ -49,18 +50,12 @@ String getControllerData() {
   JSONVar myObject;
 
   myObject["ledState"] = !digitalRead(LED_PIN);  // high on zero
-  myObject["servoAngle"] = servo.read();
+  myObject["servoAngle"] = 180-servo.read();  // servo is inverted (left -> right)
 
   String retVal = JSON.stringify(myObject);
 
   Serial.println(retVal);
   return String(retVal);
-}
-
-void sendJS(AsyncWebServerRequest * request, char* file) {
-  AsyncWebServerResponse *response = request->beginResponse(SPIFFS, file, "text/javascript");
-  response->addHeader("Content-Encoding", "gzip");
-  request->send(response);
 }
 
 void setup() {
@@ -135,7 +130,7 @@ void setup() {
     const char* PARAM = "angle";
     if (request->hasParam(PARAM)) {
       AsyncWebParameter* p = request->getParam(PARAM);
-      servo.write(p->value().toInt());
+      servo.write(SERVO_MAX-(p->value().toInt()));  // servo is inverted (left -> right)
       request->send_P(200, "text/plain", getControllerData().c_str());
     } else {
       request->send_P(400, "text/plain", ((String)("Missing parameter")).c_str());
